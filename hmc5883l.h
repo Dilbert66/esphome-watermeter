@@ -15,7 +15,7 @@ class WaterMeterSensor : public PollingComponent , public Sensor {
 #define publish_delay 5000
 
 boolean changed = false;
-boolean last = false;
+boolean previousChanged = false;
 
 int16_t y;
 
@@ -61,15 +61,15 @@ int16_t y;
     
     char s[30];
 
-    if((crossings > 0 || last) && (now - last_publish) >= publish_delay) {
+    if((crossings > 0 || previousChanged) && (now - last_publish) >= publish_delay) {
         sprintf(s,"WaterValue: %u,%d,%d,%d",crossings,y,new_val,old_val);
         publish_state(crossings);
         ESP_LOGD("info","%s",s);
         Serial.println(s);
         if (crossings > 0) 
-            last=true;
+            previousChanged=true;
         else
-            last=false;
+            previousChanged=false;
         crossings = 0;
         last_publish = now;
     } 
