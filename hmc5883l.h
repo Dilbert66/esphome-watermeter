@@ -1,10 +1,5 @@
 #include "esphome.h"
 #include "Wire.h"
-/*
-Code from Christopher Cope's "Live Wi-Fi Water Meter Reader" project at :
-http://seductiveequations.com/2015/11/09/water-meter.html
-- adapted for ESPHOME by Alain Turbide
-*/
 
 class WaterMeterSensor : public PollingComponent , public Sensor {
  public:
@@ -20,6 +15,7 @@ class WaterMeterSensor : public PollingComponent , public Sensor {
 #define publish_delay 5000
 
 boolean changed = false;
+boolean last = false;
 
 int16_t y;
 
@@ -55,32 +51,27 @@ int16_t y;
         y  = Wire.read() << 8; // Y MSB
         y |= Wire.read();      // Y LSB
     }
-
+    old_val = new_val;
     new_val = map(y, -1000, -250, -350, 350);
     changed = (old_val < 0 && new_val > 0) || (old_val > 0 && new_val < 0);
-    old_val = new_val;
-    
+
     if(changed) {
         crossings += 1;
     }
     
     char s[30];
-    if (now - last_publish >= publish_delay) {
-  
-         //   sprintf(s,"WaterValue1:%u,%d,%d,%d",crossings,y,new_val,old_val);
-                 //sprintf(s,"WaterValue:%u",crossings;
-              //  publish_state(crossings);
-             //   ESP_LOGD("info","Value %s",s);
-              //    last_publish = now;
-    }
-    if(crossings > 0 && (now - last_publish) >= publish_delay) {
-        sprintf(s,"WaterValue2:%u,%d,%d,%d",crossings,y,new_val,old_val);
+
+    if((crossings > 0 || last) && (now - last_publish) >= publish_delay) {
+        sprintf(s,"WaterValue: %u,%d,%d,%d",crossings,y,new_val,old_val);
         publish_state(crossings);
-        ESP_LOGD("info","Value %s",s);
+        ESP_LOGD("info","%s",s);
         Serial.println(s);
+        if (crossings > 0) 
+            last=true;
+        else
+            last=false;
         crossings = 0;
         last_publish = now;
-    
-    }
+    } 
   }
 };
